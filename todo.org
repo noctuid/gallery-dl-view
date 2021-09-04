@@ -1,0 +1,24 @@
+* clojure/dev setup related
+** TODO ability to use watch instead of release
+** TODO determine how to package
+- commit generated main.js every time
+- put generated main.js in github releases
+- main.js that loads clojurescript code?
+
+** TODO clojurescript repl
+currently cider opens clojure repl through shadow
+
+* TODO command to download current image to current directory
+* TODO test with preload
+* TODO ignore old images
+- store url for images viewed (or maybe image hash... though would still have to download if did that, so probably not)
+- ignore those urls on subsequent viewings
+- maybe later add hash checking additionally in case url changes
+
+* TODO option to choose download command
+e.g. aria2c instead of gallery-dl
+
+* TODO choose download location
+can just optionally download to current directory? maybe creating title
+
+- key in tridactyl to open in wallpaper folder vs. database vs. completing-read

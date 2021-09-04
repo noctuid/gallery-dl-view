@@ -1,0 +1,8 @@
+;; use deps.edn for dependencies and source-paths
+{:deps {:aliases [:shadow-cljs]}
+ :builds {:app {:target :browser
+                ;; note this is not recommended
+                :output-dir "./"
+                :modules {:main {:init-fn gallery-dl-view.core/init}}
+                ;; this is the default; mujs uses es5
+                :compiler-options {:output-feature-set :es5}}}}
