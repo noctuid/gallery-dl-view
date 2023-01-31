@@ -1,8 +1,12 @@
-;; use deps.edn for dependencies and source-paths
-{:deps {:aliases [:shadow-cljs]}
- :builds {:app {:target :browser
-                ;; note this is not recommended
-                :output-dir "./"
-                :modules {:main {:init-fn gallery-dl-view.core/init}}
-                ;; this is the default; mujs uses es5
-                :compiler-options {:output-feature-set :es5}}}}
+{:source-paths ["src"]
+ :dependencies [[com.cognitect/transit-cljs "0.8.269"]
+                [org.flatland/ordered "1.15.10"]]
+ :builds       {:app {:target           :browser
+                      ;; :target :single-file
+                      ;; :entry gallery-dl-view.core
+                      ;; :output-to "main.js"
+                      ;; note this is not recommended
+                      :output-dir       "./"
+                      :modules          {:main {:init-fn gallery-dl-view.core/init}}
+                      ;; this is the default; mujs uses es5
+                      :compiler-options {:output-feature-set :es5}}}}

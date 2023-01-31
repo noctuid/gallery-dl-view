@@ -2,3 +2,6 @@
 .shadow-cljs
 cljs-runtime
 manifest.edn
+
+node_modules/
+public/js

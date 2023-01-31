@@ -1,0 +1,39 @@
+* About
+This script allows you to open a media gallery (e.g. reddit, wallpaper websites, etc.) by directly passing a [[https://github.com/mikf/gallery-dl][gallery-dl]] supported url to mpv.  It is inspired by the [[https://github.com/jgreco/mpv-scripts/blob/master/gallery-dl_hook.lua][gallery-dl_hook]] script but has many more features such as providing commands to download media, optionally remembering and no longer displaying previously visited media files (to only see new items), etc.
+
+By default, this script will act on urls beginning with =gallery-dl://= (e.g. ~mpv gallery-dl://https://<rest of url>~), but it can also be configured to try to load files that have failed to load with any other method (e.g. yt-dlp).  For more features, see the settings section below.
+
+Only one gallery per mpv instance at a time supported.
+
+* Dependencies
+- [[https://github.com/mikf/gallery-dl][gallery-dl]]
+
+* Installation
+It is recommended to clone or download and copy this repo into the mpv scripts directory (e.g. ~git clone <url> ~/.config/mpv/scripts/gallery-dl-view~).
+
+* Settings
+In =~/.config/mpv/script-opts/gallery-dl-view.conf=, you can change the following settings:
+- =prefix= - a file prefix to tell this script the following file/url is a gallery (default: "gallery-dl://")
+- =require_prefix= - if true, only attempt to load files beginning in the prefix; if false, attempt to load any file that native methods failed to load (default: false)
+- =fetch_count= - the maximum number of files to add to the playlist at once (default: 500)
+- =gallery_url_file= - a file to write the gallery url to on mpv exit; this option exists so that I can open a previously visited gallery from this file in ranger by adding configuration to the rifle.conf (default: none/don't store)
+- =visited_urls_file= - a file to store visited gallery urls to (default: none/don't store)
+- =ignore_visited= - whether to skip displaying previously visited files found in the visited urls file (default: false)
+- =download_command= - the command to run to download images (default: "gallery-dl")
+- =download_args= - arguments to pass to the download command before the url (default: "-d .", which will save in the current directory)
+- =save_key= - key to bind to download the current image; there is a setting for this as you may not want to have a key always bound to do this since it will only work if a gallery is open (default: none)
+
+It is recommended to change the download command to something faster, for example to ~aria2c~.
+
+Here is an example configuration file:
+#+begin_src conf-unix
+gallery_url_file=./gallery-dl-view-url
+visited_urls_file=./visited-urls
+ignore_visited=yes
+download_command=aria2c
+download_args=["-d", ".", "--extra-flag-1"]
+save_key=x
+#+end_src
+
+* Slowness
+This method will be significantly slower than downloading an entire gallery and then opening it on disk.  By default, each media file will need to be downloaded when first visiting it.  Using mpv's =--prefetch-playlist= flag will speed up going to the next file in the gallery (but not going backwards in the playlist).
