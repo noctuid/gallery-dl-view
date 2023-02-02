@@ -1,11 +1,6 @@
-;; major issues
-;; - past certain range causes problems (no longer loads in correct order)
-;; - need sliding range to go past fetch_count
-
 ;; * Namespace
 (ns gallery-dl-view.core
   (:require [clojure.string :refer [blank? join replace split-lines starts-with?]])
-  (:require [clojure.set :refer [difference union]])
   (:require [cognitect.transit :as transit])
   (:require [flatland.ordered.map :refer [ordered-map]])
   (:require-macros [gallery-dl-view.macros
@@ -16,7 +11,7 @@
 (def default-settings
   (clj->js {:prefix            "gallery-dl://"
             :require_prefix    false
-            :fetch_count       500
+            :fetch_count       200
             :gallery_url_file  ""
             :visited_urls_file ""
             :ignore_visited    false
@@ -40,7 +35,13 @@
 ;; * State
 (def start-index
   "The starting index of the current range of images to fetch."
-  0)
+  1)
+
+(def previous-playlist-pos
+  "The previous playlist position.
+  Used to determine whether to go to the next range or the prior range (when
+  looping around to last playlist index from first)."
+  -1)
 
 (def gallery-url
   "The url of the opened gallery if any."
@@ -67,7 +68,7 @@
   "Set of previously visited gallery urls.
   Initialize from the visited urls file if it exists."
   (try (set (split-lines (read-file (settings :visited_urls_file))))
-       (catch :default e
+       (catch :default _
          ;; file doesn't exist
          #{})))
 
@@ -97,7 +98,7 @@
   "Write store-urls to disk if the visited urls file option is set."
   []
   (when (and (not (blank? (settings :visited_urls_file)))
-             (not (empty? store-urls)))
+             (seq store-urls))
     (append-file (settings :visited_urls_file)
                  (str (join "\n" store-urls) "\n"))))
 
@@ -132,9 +133,19 @@
   "Return the current range string to pass to gallery-dl."
   ([start]
    (let [end (+ start (settings :fetch_count))]
-     (str start "-" end)))
+     (str start "-" (- end 1))))
   ([]
    (current-range start-index)))
+
+(defn update-range
+  "Increment or decrement the start index for the current gallery range."
+  ([decrement?]
+   (set! start-index
+         (if decrement?
+           (max 1 (- start-index (settings :fetch_count)))
+           (+ start-index (settings :fetch_count)))))
+  ([]
+   (update-range false)))
 
 ;; * Keybinding Functions
 (defn gallery-dl-download-url
@@ -168,44 +179,42 @@
   (mp commandv "loadlist"
       (str "memory://" (join "\n" urls))))
 
-(defn load-next-range
-  "Load the next range of media files for the current gallery."
+(defn load-range
+  "Load the current range of media files for the current gallery."
   ([gallery-data]
-   (let [status          (gallery-data "status")
-         stdout          (gallery-data "stdout")
-         [urls metadata] (parse-gallery-dl-json stdout)]
-
-     (cond (not= status 0)
-           (info "Failed to retrieve image urls with error "
-                 (gallery-data "stderr"))
-
-           ;; --range past max will just return nothing
-           (empty? urls)
-           ;; TODO store that shouldn't keep trying (should be reset on gallery
-           ;; load; make helper function for resetting this, start index, etc.)
+   ;; using loop to prevent stack overflow (which happens in under 10 recursions
+   ;; it looks like); also want to be synchronous
+   (loop [gallery-data gallery-data]
+     (if (not= (gallery-data "status") 0)
+       (info "Failed to retrieve image urls with error "
+             (gallery-data "stderr"))
+       (let [[urls metadata] (parse-gallery-dl-json (gallery-data "stdout"))]
+         ;; --range past max will just return nothing
+         (if (empty? urls)
            (info "No more images in gallery to load")
-
-           :else
-           (do
-             (let [new-urls     (remove visited-urls urls)
-                   new-metadata (apply dissoc metadata visited-urls)
-                   range        (current-range)]
-               (set! start-index (+ (settings :fetch_count) 1))
-               (if (seq new-urls)
-                 (do
-                   (info "Loading new gallery urls in range " range)
-                   (add-images new-urls new-metadata))
-                 (do
-                   ;; TODO what happens if this is the first time? should make
-                   ;; synchronous so won't exit?
-                   (info "No new urls in gallery range " range)
-                   (load-next-range))))))))
+           (let [new-urls     (if (settings :ignore_visited)
+                                (remove visited-urls urls)
+                                urls)
+                 new-metadata (apply dissoc metadata visited-urls)
+                 range        (current-range)]
+             (if (seq new-urls)
+               (do
+                 (info "Loading new gallery urls in range " range)
+                 (add-images new-urls new-metadata))
+               (do
+                 (info "No new urls in gallery range " range)
+                 (update-range)
+                 ;; TODO maybe add max index setting (would need to be a very
+                 ;; large gallery to be a problem)
+                 (recur (subprocess-capture
+                         ["gallery-dl"
+                          "--range" (current-range)
+                          "--dump-json" gallery-url]))))))))))
   ([]
-   ;; TODO use async callback
-   (load-next-range (subprocess-capture
-                     ["gallery-dl"
-                      "--range" (current-range)
-                      "--dump-json" gallery-url]))))
+   (load-range (subprocess-capture
+                ["gallery-dl"
+                 "--range" (current-range)
+                 "--dump-json" gallery-url]))))
 
 (defn open-gallery
   "Open url as a gallery-dl supported gallery, removing gallery-dl:// prefix.
@@ -216,19 +225,24 @@
                    (replace url gdl-prefix ""))
         res      (subprocess-capture
                   ["gallery-dl"
-                   "--range" (current-range 0)
+                   "--range" (current-range 1)
                    "--dump-json" real-url])]
     (if (= (res "status") 0)
       (do
-        (set! gallery-url url)
-        (set! start-index 0)
+        (set! gallery-url real-url)
+        (set! start-index 1)
         (info "Opening gallery " real-url)
         (make-keybindings)
         (when-not (blank? (settings :gallery_url_file))
           (write-file (settings :gallery_url_file) real-url))
-        (load-next-range res))
+        (load-range res))
       (info "Failed to open gallery " real-url
             " with error " (res "stderr")))))
+
+(defn get-max-playlist-pos
+  "Return the maximum playlist position."
+  []
+  (- (js/parseInt (mp get_property "playlist-count")) 1))
 
 (defn maybe-open-gallery
   "Open the current filename using gallery-dl if it starts with gallery-dl://
@@ -238,11 +252,32 @@
     (cond (starts-with? url gdl-prefix)
           (open-gallery url false)
 
+          ;; TODO confirm this case no longer happens (filtering in
+          ;; load-next-range)
           (url-previously-visited?)
           (mp commandv "playlist-remove" (mp get_property "playlist-pos"))
 
           :else
-          (maybe-mark-url-visited))))
+          (do
+            (maybe-mark-url-visited)
+            (let [pos     (js/parseInt (mp get_property "playlist-pos"))
+                  max-pos (get-max-playlist-pos)]
+              ;; update range when going beyond first or last image
+              ;; TODO fix edge case when there are only 2 images in the range
+              ;; and you go right (will go to previous range)
+              (cond (and (= pos max-pos)
+                         (= previous-playlist-pos 0)
+                         (not (= start-index 1)))
+                    (do (update-range true)
+                        (load-range)
+                        (mp set_property "playlist-pos"
+                            (str (get-max-playlist-pos))))
+
+                    (and (= pos 0)
+                         (= previous-playlist-pos max-pos))
+                    (do (update-range)
+                        (load-range)))
+              (set! previous-playlist-pos pos))))))
 
 (defn maybe-open-gallery-on-failure
   "Attempt to open the current filename with gallery-dl.

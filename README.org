@@ -15,7 +15,7 @@ It is recommended to clone or download and copy this repo into the mpv scripts d
 In =~/.config/mpv/script-opts/gallery-dl-view.conf=, you can change the following settings:
 - =prefix= - a file prefix to tell this script the following file/url is a gallery (default: "gallery-dl://")
 - =require_prefix= - if true, only attempt to load files beginning in the prefix; if false, attempt to load any file that native methods failed to load (default: false)
-- =fetch_count= - the maximum number of files to add to the playlist at once (default: 500)
+- =fetch_count= - the maximum number of files to add to the playlist at once; going past the last file will load the next range and going before the first file will load the previous range (default: 200)
 - =gallery_url_file= - a file to write the gallery url to on mpv exit; this option exists so that I can open a previously visited gallery from this file in ranger by adding configuration to the rifle.conf (default: none/don't store)
 - =visited_urls_file= - a file to store visited gallery urls to (default: none/don't store)
 - =ignore_visited= - whether to skip displaying previously visited files found in the visited urls file (default: false)
@@ -37,3 +37,5 @@ save_key=x
 
 * Slowness
 This method will be significantly slower than downloading an entire gallery and then opening it on disk.  By default, each media file will need to be downloaded when first visiting it.  Using mpv's =--prefetch-playlist= flag will speed up going to the next file in the gallery (but not going backwards in the playlist).
+
+If this is still not fast enough for you, you would be better off downloading the entire gallery (or part of it) and viewing local images instead of using this script.  Any improvements to prefetching/speed should ideally be handled in mpv as this script just converts a gallery url to a bunch of natively supported urls.
