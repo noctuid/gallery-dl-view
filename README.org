@@ -1,7 +1,7 @@
 * About
 This script allows you to open a media gallery (e.g. reddit, wallpaper websites, etc.) by directly passing a [[https://github.com/mikf/gallery-dl][gallery-dl]] supported url to mpv.  It is inspired by the [[https://github.com/jgreco/mpv-scripts/blob/master/gallery-dl_hook.lua][gallery-dl_hook]] script but has many more features such as providing commands to download media, optionally remembering and no longer displaying previously visited media files (to only see new items), etc.
 
-By default, this script will act on urls beginning with =gallery-dl://= (e.g. ~mpv gallery-dl://https://<rest of url>~), but it can also be configured to try to load files that have failed to load with any other method (e.g. yt-dlp).  For more features, see the settings section below.
+By default, this script will act on urls beginning with =gallery-dl://= (e.g. ~mpv gallery-dl://https://<rest of url>~) or on urls that fail to load with any native methods (e.g. yt-dlp).  For more explanation of features and options, see the settings section below.
 
 Only one gallery per mpv instance at a time supported.
 
