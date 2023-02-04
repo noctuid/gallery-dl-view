@@ -31,6 +31,7 @@ gallery_url_file=./gallery-dl-view-url
 visited_urls_file=./visited-urls
 ignore_visited=yes
 download_command=aria2c
+# could also include --cookies <cookies file> to use with sites that require cookies
 download_args=["-d", ".", "--extra-flag-1"]
 save_key=x
 #+end_src
@@ -39,3 +40,20 @@ save_key=x
 This method will be significantly slower than downloading an entire gallery and then opening it on disk.  By default, each media file will need to be downloaded when first visiting it.  Using mpv's =--prefetch-playlist= flag will speed up going to the next file in the gallery (but not going backwards in the playlist).
 
 If this is still not fast enough for you, you would be better off downloading the entire gallery (or part of it) and viewing local images instead of using this script.  Any improvements to prefetching/speed should ideally be handled in mpv as this script just converts a gallery url to a bunch of natively supported urls.
+
+* Browser Integration
+Using [[https://github.com/tridactyl/tridactyl][tridactyl]], I have a key bound to open the current gallery url in mpv (or "mvi" which is a script I have to run mpv with a custom configuration better suited to image viewing).
+#+begin_src conf-space
+bind tg composite get_current_url | shellescape | !s mvigallery
+#+end_src
+
+I'm using [[https://github.com/noctuid/dotfiles/blob/master/scripts/bin/media/mvigallery][this script]] which creates a directory based on the gallery information (e.g. "<site name>/<gallery title>/") and opens the gallery in mpv in that directory.
+
+* Ranger Integration
+I set =gallery_url_file= to =./gallery= so I can reopen a gallery later in ranger or Emacs.  Here's an example from my rifle.conf:
+#+begin_src conf-space
+# open text file storing gallery url as gallery in mpv/mvi
+file, has mvigallery, name gallery(-dl-url)?$ = tdrop -a auto_hide && mvigallery "$@" ./ && tdrop -a auto_show
+# or without tdrop
+file, has mvigallery, name gallery(-dl-url)?$ = mvigallery "$@" ./
+#+end_src
