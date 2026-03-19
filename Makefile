@@ -1,8 +1,11 @@
-# TODO don't use makefile?
-.DUMMY: release
-release:
-	clojure -M:shadow-cljs release app
+# TODO use mise?
+.PHONY: release clean nix-develop
 
-# need different target
-# watch:
-# 	clojure -M:shadow-cljs watch app
+release:
+	@nix --extra-experimental-features 'nix-command flakes' develop --command bunx shadow-cljs release app
+
+nix-develop:
+	@nix --extra-experimental-features 'nix-command flakes' develop
+
+clean:
+	@rm -f main.js

@@ -18,7 +18,7 @@
 
             :download_command "gallery-dl"
             ;; using shortopt because -d works for both aria and gallery-dl
-            :download_args    ["-d" "."]
+            :download_args    "[\"-d\", \".\"]"
             :save_key         ""}))
 
 (. (. js/mp -options) read-options default-settings "gallery-dl-view")
@@ -26,8 +26,11 @@
 (defn settings
   "Return the setting value for keyword prop."
   [prop]
-  (let [clj-settings (js->clj default-settings)]
-    (clj-settings (name prop))))
+  (let [clj-settings (js->clj default-settings)
+        value (clj-settings (name prop))]
+    (if (and (= prop :download_args) (string? value))
+      (js->clj (js/JSON.parse value))
+      value)))
 
 ;; * Constants
 (def ^:const gdl-prefix (settings :prefix))

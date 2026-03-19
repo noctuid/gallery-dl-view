@@ -2,7 +2,8 @@
   "name": "gallery-dl-view",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "bun@1.2.4",
   "devDependencies": {
-    "shadow-cljs": "2.20.20"
+    "shadow-cljs": "^3.3.6"
   }
 }

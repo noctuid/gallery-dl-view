@@ -32,7 +32,7 @@ visited_urls_file=./visited-urls
 ignore_visited=yes
 download_command=aria2c
 # could also include --cookies <cookies file> to use with sites that require cookies
-download_args=["-d", ".", "--extra-flag-1"]
+download_args=["-d", ".", "--cookies-from-browser", "Firefox"]
 save_key=x
 #+end_src
 
