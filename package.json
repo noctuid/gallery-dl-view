@@ -4,6 +4,6 @@
   "private": true,
   "packageManager": "bun@1.2.4",
   "devDependencies": {
-    "shadow-cljs": "^3.3.6"
+    "shadow-cljs": "3.3.6"
   }
 }

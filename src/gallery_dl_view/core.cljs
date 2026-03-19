@@ -8,6 +8,10 @@
                             subprocess-detached]]))
 
 ;; * Settings
+(def ^:const default-download-args
+  "Default download arguments as a Clojure vector."
+  ["-d" "."])
+
 (def default-settings
   (clj->js {:prefix            "gallery-dl://"
             :require_prefix    false
@@ -18,7 +22,7 @@
 
             :download_command "gallery-dl"
             ;; using shortopt because -d works for both aria and gallery-dl
-            :download_args    "[\"-d\", \".\"]"
+            :download_args    (js/JSON.stringify (clj->js default-download-args))
             :save_key         ""}))
 
 (. (. js/mp -options) read-options default-settings "gallery-dl-view")
@@ -29,7 +33,19 @@
   (let [clj-settings (js->clj default-settings)
         value (clj-settings (name prop))]
     (if (and (= prop :download_args) (string? value))
-      (js->clj (js/JSON.parse value))
+      (try
+        (let [parsed (js->clj (js/JSON.parse value))]
+          (if (and (vector? parsed)
+                   (every? string? parsed))
+            parsed
+            (do
+              (info "Invalid download_args: expected array of strings, got: "
+                    (js/JSON.stringify (clj->js parsed)) " -- falling back to default")
+              default-download-args)))
+        (catch :default e
+          (info "Failed to parse download_args as JSON: " value
+                " -- falling back to default")
+          default-download-args))
       value)))
 
 ;; * Constants
